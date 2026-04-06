@@ -22,7 +22,7 @@ from rich.text import Text
 
 PICO_IP = "192.168.4.1"
 PICO_PORT = 8888
-SAVE_DIR = "punch_data"
+SAVE_DIR = r"C:\Users\kvibn\Downloads\punch_data"
 
 
 class PunchDashboard:
@@ -36,7 +36,10 @@ class PunchDashboard:
         self.status = "Connecting to Pico..."
         self.last_stats = ""
         self.config_info = ""
-        os.makedirs(SAVE_DIR, exist_ok=True)
+        # Create timestamped session folder
+        session = time.strftime("%Y-%m-%d_%H-%M-%S")
+        self.save_dir = os.path.join(SAVE_DIR, session)
+        os.makedirs(self.save_dir, exist_ok=True)
 
     def connect(self):
         """Connect to Pico TCP server"""
@@ -142,7 +145,7 @@ class PunchDashboard:
         }
 
     def save_csv(self, punch):
-        fname = os.path.join(SAVE_DIR, f"punch_{punch['num']:03d}.csv")
+        fname = os.path.join(self.save_dir, f"punch_{punch['num']:03d}.csv")
         with open(fname, "w") as f:
             f.write("t_ms,ax,ay,az,gx,gy,gz,fsr_raw,fsr_v\n")
             for r in punch["rows"]:
@@ -199,7 +202,7 @@ class PunchDashboard:
             ), size=3),
             Layout(tbl, ratio=4),
             Layout(Panel(
-                Text(f"WiFi: {AP_SSID} @ {PICO_IP}:{PICO_PORT}  |  Ctrl+C to stop  |  CSVs: {os.path.abspath(SAVE_DIR)}/", style="dim", justify="center"),
+                Text(f"WiFi: {AP_SSID} @ {PICO_IP}:{PICO_PORT}  |  Ctrl+C to stop  |  CSVs: {os.path.abspath(self.save_dir)}/", style="dim", justify="center"),
                 border_style="dim"
             ), size=3),
         )
@@ -209,7 +212,7 @@ class PunchDashboard:
         console = Console()
         console.print(f"[cyan]Connecting to Pico at {PICO_IP}:{PICO_PORT}...[/cyan]")
         console.print(f"[yellow]Make sure you're connected to the '{AP_SSID}' WiFi![/yellow]")
-        console.print(f"[cyan]Saving CSVs to {os.path.abspath(SAVE_DIR)}/[/cyan]")
+        console.print(f"[cyan]Saving CSVs to {os.path.abspath(self.save_dir)}/[/cyan]")
 
         try:
             with Live(self.build_display(), refresh_per_second=10, console=console) as live:
@@ -229,7 +232,7 @@ class PunchDashboard:
                     live.update(self.build_display())
 
         except KeyboardInterrupt:
-            console.print(f"\n[yellow]Stopped. {len(self.punches)} punches saved to {os.path.abspath(SAVE_DIR)}/[/yellow]")
+            console.print(f"\n[yellow]Stopped. {len(self.punches)} punches saved to {os.path.abspath(self.save_dir)}/[/yellow]")
         finally:
             if self.sock:
                 self.sock.close()
